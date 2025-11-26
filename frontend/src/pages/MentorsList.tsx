@@ -16,6 +16,7 @@ export default function MentorsList() {
         graduation_year: graduationYear ? parseInt(graduationYear) : undefined,
         verified: verified !== '' ? verified : undefined,
       }),
+    refetchInterval: 2000,
   })
 
   return (

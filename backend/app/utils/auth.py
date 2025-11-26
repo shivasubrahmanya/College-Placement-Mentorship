@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.config import settings
@@ -66,4 +66,23 @@ def get_current_active_user(
 ) -> User:
     """Get current active user"""
     return current_user
+
+
+def get_current_user_optional(
+    authorization: str | None = Header(None),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """Optionally get current user from Authorization header; returns None if missing/invalid"""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1]
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        email: str | None = payload.get("sub")
+        if not email:
+            return None
+    except JWTError:
+        return None
+    user = db.query(User).filter(User.email == email).first()
+    return user
 

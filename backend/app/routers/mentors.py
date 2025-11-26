@@ -1,11 +1,14 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from app.db import get_db
 from app.models.user import User, UserRole
 from app.models.mentor import Mentor, Branch
 from app.schemas.mentor import MentorCreate, MentorResponse, MentorListResponse, MentorUpdate
 from app.utils.auth import get_current_active_user
+from app.models.resource import Resource
+from app.schemas.resource import ResourceListResponse
 
 router = APIRouter(prefix="/mentors", tags=["mentors"])
 
@@ -66,6 +69,19 @@ def create_mentor(
     db.commit()
     db.refresh(new_mentor)
     
+    # Notify admins for verification via chat message
+    from app.models.admin import Admin
+    from app.models.chat import Chat
+    admins = db.query(Admin).all()
+    for admin in admins:
+        db.add(Chat(
+            sender_id=current_user.id,
+            receiver_id=admin.user_id,
+            message=f"New mentor {current_user.full_name} requires verification"
+        ))
+    if admins:
+        db.commit()
+    
     return new_mentor
 
 
@@ -93,6 +109,27 @@ def get_my_mentor_profile(
             detail="Mentor profile not found"
         )
     return mentor
+
+
+@router.get("/{mentor_id}/resources", response_model=list[ResourceListResponse])
+def list_resources_by_mentor(
+    mentor_id: int,
+    db: Session = Depends(get_db)
+):
+    mentor = db.query(Mentor).filter(Mentor.id == mentor_id).first()
+    if not mentor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mentor not found"
+        )
+    resources = (
+        db.query(Resource)
+        .filter(Resource.user_id == mentor.user_id, Resource.is_approved == True)
+        .order_by(Resource.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    return resources
 
 
 @router.get("/by-user/{user_id}", response_model=MentorResponse)

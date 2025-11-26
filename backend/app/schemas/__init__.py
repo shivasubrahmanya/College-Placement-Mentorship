@@ -3,7 +3,7 @@ from app.schemas.user import UserResponse, UserUpdate
 from app.schemas.mentor import MentorCreate, MentorResponse, MentorUpdate, MentorListResponse
 from app.schemas.mentee import MenteeCreate, MenteeResponse
 from app.schemas.post import PostCreate, PostResponse, PostListResponse, PostUpdate
-from app.schemas.resource import ResourceCreate, ResourceResponse, ResourceListResponse, ResourceUpdate
+from app.schemas.resource import ResourceCreate, ResourceResponse, ResourceListResponse, ResourceUpdate, ResourceMentorSummary
 from app.schemas.chat import ChatCreate, ChatResponse, ChatReadUpdate
 from app.schemas.leaderboard import LeaderboardResponse
 from app.schemas.admin import AdminCreate, AdminResponse, AdminUpdate
@@ -40,6 +40,7 @@ __all__ = [
     "ResourceResponse",
     "ResourceListResponse",
     "ResourceUpdate",
+    "ResourceMentorSummary",
     "ChatCreate",
     "ChatResponse",
     "ChatReadUpdate",

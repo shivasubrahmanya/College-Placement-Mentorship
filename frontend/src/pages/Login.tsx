@@ -16,9 +16,18 @@ export default function Login() {
 
   const mutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       login(data.access_token)
-      navigate('/')
+      try {
+        const me = await (await import('../api/users')).usersApi.getMe()
+        if (me.role === 'ADMIN') {
+          navigate('/admin')
+        } else {
+          navigate('/')
+        }
+      } catch {
+        navigate('/')
+      }
     },
   })
 

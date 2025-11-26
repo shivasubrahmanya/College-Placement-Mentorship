@@ -7,12 +7,13 @@ export interface Resource {
   title: string
   description?: string
   file_url: string
+  resource_type: ResourceType
   category?: string
   created_at: string
   user: User
 }
 
-export type ResourceType = 'Study Material' | 'Preparation Guide' | 'Experience' | 'Other'
+export type ResourceType = string
 
 export const ResourceTypeValues = ['Study Material', 'Preparation Guide', 'Experience', 'Other'] as const
 
@@ -33,6 +34,14 @@ export const resourcesApi = {
     limit?: number
   }): Promise<Resource[]> => {
     const response = await apiClient.get<Resource[]>('/resources', { params })
+    return response.data
+  },
+  listByMentorId: async (mentorId: number): Promise<Resource[]> => {
+    const response = await apiClient.get<Resource[]>(`/mentors/${mentorId}/resources`)
+    return response.data
+  },
+  listContributors: async (): Promise<{ user_id: number; full_name: string; resource_count: number }[]> => {
+    const response = await apiClient.get('/resources/mentors')
     return response.data
   },
   

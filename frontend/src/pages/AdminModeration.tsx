@@ -1,7 +1,8 @@
 /**
  * Admin Content Moderation Panel
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../api/client'
 import { mentorsApi } from '../api/mentors'
@@ -28,7 +29,15 @@ interface Resource {
 }
 
 export default function AdminModeration() {
+  const location = useLocation()
   const [activeTab, setActiveTab] = useState<'posts' | 'resources' | 'mentors'>('posts')
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tab = params.get('tab') as 'posts' | 'resources' | 'mentors' | null
+    if (tab && ['posts', 'resources', 'mentors'].includes(tab)) {
+      setActiveTab(tab)
+    }
+  }, [location.search])
   const [approvedFilter, setApprovedFilter] = useState<boolean | null>(null)
   const queryClient = useQueryClient()
 
@@ -351,6 +360,8 @@ function MentorsModeration() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentorsModeration'] })
+      queryClient.invalidateQueries({ queryKey: ['mentors'] })
+      queryClient.invalidateQueries({ queryKey: ['mentor'] })
     },
   })
 

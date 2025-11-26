@@ -12,12 +12,13 @@ export default function MentorProfile() {
     queryKey: ['mentor', mentorId],
     queryFn: () => mentorsApi.get(mentorId),
     enabled: !!mentorId,
+    refetchInterval: 2000,
   })
 
   const { data: resources } = useQuery({
-    queryKey: ['mentorResources', mentor?.user_id],
-    queryFn: () => resourcesApi.list({ user_id: mentor!.user_id, limit: 50 }),
-    enabled: !!mentor?.user_id,
+    queryKey: ['mentorResources', mentorId],
+    queryFn: () => resourcesApi.listByMentorId(mentorId),
+    enabled: !!mentorId,
   })
 
   if (isLoading) {

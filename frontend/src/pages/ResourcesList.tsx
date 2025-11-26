@@ -15,10 +15,15 @@ export default function ResourcesList() {
 
   const resourcesQuery = useQuery({
     queryKey: ['resources', category],
-    queryFn: () => resourcesApi.list({ category: category || undefined }),
+    queryFn: () => resourcesApi.list({ category: category || undefined, limit: 50 }),
   })
   const resources = resourcesQuery.data
   const isLoading = resourcesQuery.isLoading
+
+  const { data: contributors } = useQuery({
+    queryKey: ['resourceContributors'],
+    queryFn: resourcesApi.listContributors,
+  })
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -34,6 +39,7 @@ export default function ResourcesList() {
       setFileUrl('')
       setCategoryInput('')
       setResourceType('Other')
+      setCategory('')
       // Optimistically prepend the created resource to current list
       queryClient.setQueryData(['resources', category], (old: any) => {
         if (Array.isArray(old)) {
@@ -43,6 +49,7 @@ export default function ResourcesList() {
       })
       queryClient.invalidateQueries({ queryKey: ['resources', category] })
       queryClient.invalidateQueries({ queryKey: ['resources'] })
+      queryClient.invalidateQueries({ queryKey: ['allResources'] })
       resourcesQuery.refetch()
     },
     onError: (err: any) => {
@@ -74,7 +81,28 @@ export default function ResourcesList() {
 
   return (
     <div className="px-4 py-6">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Resources</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Resources</h1>
+        <Link to="/resources/all" className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">View All</Link>
+      </div>
+
+      {contributors && contributors.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+          <h2 className="text-lg font-semibold mb-2">Mentors who shared resources</h2>
+          <div className="flex flex-wrap gap-2">
+            {contributors.map((c) => (
+              <Link
+                key={c.user_id}
+                to={`/mentors/user/${c.user_id}`}
+                className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
+                title={`${c.full_name} • ${c.resource_count} resources`}
+              >
+                {c.full_name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {(currentUser?.role === 'MENTOR' || currentUser?.role === 'ADMIN') && (
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -102,7 +130,7 @@ export default function ResourcesList() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Link URL</label>
-              <input value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} placeholder="https://..." className="px-3 py-2 border border-gray-300 rounded-md w-full" required />
+              <input type="url" value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} placeholder="https://..." className="px-3 py-2 border border-gray-300 rounded-md w-full" required />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -145,7 +173,7 @@ export default function ResourcesList() {
                 )}
                 <div className="flex items-center gap-4 text-sm text-gray-500">
                   <Link to={`/mentors/user/${resource.user_id}`} className="text-blue-600 hover:text-blue-800">
-                    by {resource.user.full_name}
+                    by {resource.user?.full_name || 'Unknown'}
                   </Link>
                   {resource.category && (
                     <span className="px-2 py-1 bg-gray-100 rounded">{resource.category}</span>
