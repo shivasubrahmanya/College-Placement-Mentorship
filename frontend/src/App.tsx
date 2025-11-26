@@ -12,6 +12,11 @@ import Chat from './pages/Chat'
 import Leaderboard from './pages/Leaderboard'
 import TestConnection from './pages/TestConnection'
 import Layout from './components/Layout'
+import Profile from './pages/Profile'
+import MentorByUserProfile from './pages/MentorByUserProfile'
+import AdminDashboard from './pages/AdminDashboard'
+import AdminModeration from './pages/AdminModeration'
+import AdminProfile from './pages/AdminProfile'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -44,10 +49,15 @@ function App() {
           <Route index element={<Feed />} />
           <Route path="mentors" element={<MentorsList />} />
           <Route path="mentors/:id" element={<MentorProfile />} />
+          <Route path="mentors/user/:userId" element={<MentorByUserProfile />} />
           <Route path="posts/create" element={<CreatePost />} />
           <Route path="resources" element={<ResourcesList />} />
           <Route path="chat/:userId" element={<Chat />} />
           <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="admin/moderation" element={<AdminModeration />} />
+          <Route path="admin/profile" element={<AdminProfile />} />
         </Route>
       </Routes>
     </Router>

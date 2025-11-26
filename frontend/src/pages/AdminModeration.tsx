@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../api/client'
+import { mentorsApi } from '../api/mentors'
 
 interface Post {
   id: number
@@ -27,7 +28,7 @@ interface Resource {
 }
 
 export default function AdminModeration() {
-  const [activeTab, setActiveTab] = useState<'posts' | 'resources'>('posts')
+  const [activeTab, setActiveTab] = useState<'posts' | 'resources' | 'mentors'>('posts')
   const [approvedFilter, setApprovedFilter] = useState<boolean | null>(null)
   const queryClient = useQueryClient()
 
@@ -148,6 +149,16 @@ export default function AdminModeration() {
             }`}
           >
             Resources
+          </button>
+          <button
+            onClick={() => setActiveTab('mentors')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'mentors'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Mentors
           </button>
         </nav>
       </div>
@@ -315,7 +326,64 @@ export default function AdminModeration() {
           )}
         </div>
       )}
+
+      {/* Mentors Tab */}
+      {activeTab === 'mentors' && (
+        <div>
+          <MentorsModeration />
+        </div>
+      )}
     </div>
   )
 }
 
+function MentorsModeration() {
+  const queryClient = useQueryClient()
+  const { data: mentors, isLoading } = useQuery({
+    queryKey: ['mentorsModeration'],
+    queryFn: () => mentorsApi.list({ limit: 100 }),
+  })
+
+  const verifyMentor = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiClient.put(`/admin/mentors/${id}/verify`)
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['mentorsModeration'] })
+    },
+  })
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading mentors...</div>
+  }
+
+  return (
+    <div className="space-y-4">
+      {mentors?.map((m) => (
+        <div key={m.id} className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">{m.user.full_name}</h3>
+              <p className="text-gray-600">Branch: {m.branch} • Graduation: {m.graduation_year}</p>
+            </div>
+            <div className="flex gap-2">
+              {!m.verified && (
+                <button
+                  onClick={() => verifyMentor.mutate(m.id)}
+                  disabled={verifyMentor.isPending}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                >
+                  Verify
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+      {mentors && mentors.length === 0 && (
+        <div className="text-center py-8 text-gray-500">No mentors found</div>
+      )}
+    </div>
+  )
+}

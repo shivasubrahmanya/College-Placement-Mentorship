@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.db import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.resource import Resource
 from app.schemas.resource import ResourceCreate, ResourceResponse, ResourceListResponse
 from app.utils.auth import get_current_active_user
@@ -14,6 +14,7 @@ router = APIRouter(prefix="/resources", tags=["resources"])
 def list_resources(
     category: Optional[str] = Query(None, description="Filter by category"),
     resource_type: Optional[str] = Query(None, description="Filter by resource type"),
+    user_id: Optional[int] = Query(None, description="Filter by user (mentor) id"),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db)
@@ -33,6 +34,9 @@ def list_resources(
         except ValueError:
             pass  # Invalid resource type, ignore filter
     
+    if user_id:
+        query = query.filter(Resource.user_id == user_id)
+    
     resources = query.order_by(Resource.created_at.desc()).offset(skip).limit(limit).all()
     return resources
 
@@ -43,10 +47,33 @@ def create_resource(
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new resource"""
+    """Create a new resource (mentors only)"""
+    if current_user.role not in (UserRole.MENTOR, UserRole.ADMIN):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only mentors or admins can create resources"
+        )
+    from app.models.resource import ResourceType
+    rt = resource_data.resource_type
+    if isinstance(rt, str):
+        key = rt.strip().upper().replace(" ", "_")
+        mapping = {
+            "STUDY_MATERIAL": ResourceType.STUDY_MATERIAL,
+            "PREPARATION_GUIDE": ResourceType.PREPARATION_GUIDE,
+            "EXPERIENCE": ResourceType.EXPERIENCE,
+            "OTHER": ResourceType.OTHER,
+        }
+        rt_enum = mapping.get(key, ResourceType.OTHER)
+    else:
+        rt_enum = rt
     new_resource = Resource(
         user_id=current_user.id,
-        **resource_data.model_dump()
+        title=resource_data.title,
+        description=resource_data.description,
+        file_url=resource_data.file_url,
+        resource_type=rt_enum,
+        category=resource_data.category,
+        is_approved=True,
     )
     db.add(new_resource)
     db.commit()

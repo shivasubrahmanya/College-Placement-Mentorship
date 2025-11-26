@@ -1,9 +1,11 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.db import get_db
 from app.models.user import User, UserRole
 from app.models.mentor import Mentor
+from app.models.mentee import Mentee
 from app.models.admin import Admin
 from app.models.post import Post
 from app.models.resource import Resource
@@ -12,7 +14,7 @@ from app.models.leaderboard import Leaderboard
 import app.schemas  # This triggers model rebuilds in __init__.py
 
 from app.schemas.mentor import MentorResponse
-from app.schemas.admin import AdminResponse, AdminUpdate
+from app.schemas.admin import AdminResponse, AdminUpdate, AdminCreate
 from app.schemas.post import PostResponse
 from app.schemas.resource import ResourceResponse
 from app.utils.auth import get_current_active_user
@@ -28,6 +30,27 @@ def check_admin(current_user: User = Depends(get_current_active_user), db: Sessi
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
+    return admin
+
+
+@router.post("/profile/create", response_model=AdminResponse, status_code=status.HTTP_201_CREATED)
+def create_admin_profile(
+    admin_create: AdminCreate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Create admin profile for current user and set role to ADMIN"""
+    existing = db.query(Admin).filter(Admin.user_id == current_user.id).first()
+    if existing:
+        return existing
+    current_user.role = UserRole.ADMIN
+    admin = Admin(
+        user_id=current_user.id,
+        **admin_create.model_dump(exclude_unset=True)
+    )
+    db.add(admin)
+    db.commit()
+    db.refresh(admin)
     return admin
 
 
@@ -257,5 +280,152 @@ def recalculate_leaderboard(
     return {
         "message": "Leaderboard recalculated successfully",
         "updated_entries": updated_count
+    }
+
+
+@router.post("/db/install", response_model=dict)
+def install_admin_triggers_and_procedures(
+    admin: Admin = Depends(check_admin),
+    db: Session = Depends(get_db)
+):
+    statements = []
+    statements.append("""
+    DROP TRIGGER IF EXISTS trg_admin_limit_bi;
+    """)
+    statements.append("""
+    CREATE TRIGGER trg_admin_limit_bi BEFORE INSERT ON admin
+    FOR EACH ROW
+    BEGIN
+      IF (SELECT COUNT(*) FROM admin) >= 10 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Admin limit reached';
+      END IF;
+    END;
+    """)
+    statements.append("""
+    DROP TRIGGER IF EXISTS trg_resources_ai;
+    """)
+    statements.append("""
+    CREATE TRIGGER trg_resources_ai AFTER INSERT ON resources
+    FOR EACH ROW
+    BEGIN
+      INSERT INTO leaderboard (user_id, total_resources, total_posts, package, points)
+      VALUES (
+        NEW.user_id, 1, 0,
+        COALESCE((SELECT package FROM mentors WHERE user_id = NEW.user_id), 0),
+        10
+      )
+      ON DUPLICATE KEY UPDATE
+        total_resources = total_resources + 1,
+        points = (total_resources*10 + total_posts*5 + package*2);
+    END;
+    """)
+    statements.append("""
+    DROP TRIGGER IF EXISTS trg_resources_ad;
+    """)
+    statements.append("""
+    CREATE TRIGGER trg_resources_ad AFTER DELETE ON resources
+    FOR EACH ROW
+    BEGIN
+      UPDATE leaderboard
+        SET total_resources = GREATEST(total_resources - 1, 0),
+            points = (total_resources*10 + total_posts*5 + package*2)
+      WHERE user_id = OLD.user_id;
+    END;
+    """)
+    statements.append("""
+    DROP TRIGGER IF EXISTS trg_posts_ai;
+    """)
+    statements.append("""
+    CREATE TRIGGER trg_posts_ai AFTER INSERT ON posts
+    FOR EACH ROW
+    BEGIN
+      INSERT INTO leaderboard (user_id, total_posts, total_resources, package, points)
+      VALUES (
+        NEW.user_id, 1, 0,
+        COALESCE((SELECT package FROM mentors WHERE user_id = NEW.user_id), 0),
+        5
+      )
+      ON DUPLICATE KEY UPDATE
+        total_posts = total_posts + 1,
+        points = (total_resources*10 + total_posts*5 + package*2);
+    END;
+    """)
+    statements.append("""
+    DROP TRIGGER IF EXISTS trg_posts_ad;
+    """)
+    statements.append("""
+    CREATE TRIGGER trg_posts_ad AFTER DELETE ON posts
+    FOR EACH ROW
+    BEGIN
+      UPDATE leaderboard
+        SET total_posts = GREATEST(total_posts - 1, 0),
+            points = (total_resources*10 + total_posts*5 + package*2)
+      WHERE user_id = OLD.user_id;
+    END;
+    """)
+    statements.append("""
+    DROP TRIGGER IF EXISTS trg_mentors_au;
+    """)
+    statements.append("""
+    CREATE TRIGGER trg_mentors_au AFTER UPDATE ON mentors
+    FOR EACH ROW
+    BEGIN
+      IF NEW.package <> OLD.package THEN
+        UPDATE leaderboard
+          SET package = NEW.package,
+              points = (total_resources*10 + total_posts*5 + NEW.package*2)
+        WHERE user_id = NEW.user_id;
+      END IF;
+    END;
+    """)
+    statements.append("""
+    DROP PROCEDURE IF EXISTS sp_recalc_leaderboard;
+    """)
+    statements.append("""
+    CREATE PROCEDURE sp_recalc_leaderboard()
+    BEGIN
+      DECLARE done INT DEFAULT 0;
+      DECLARE v_user_id INT;
+      DECLARE cur CURSOR FOR SELECT user_id FROM leaderboard;
+      DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+      OPEN cur;
+      read_loop: LOOP
+        FETCH cur INTO v_user_id;
+        IF done = 1 THEN LEAVE read_loop; END IF;
+        UPDATE leaderboard lb
+        SET lb.total_resources = (SELECT COUNT(*) FROM resources r WHERE r.user_id = v_user_id),
+            lb.total_posts = (SELECT COUNT(*) FROM posts p WHERE p.user_id = v_user_id),
+            lb.package = COALESCE((SELECT m.package FROM mentors m WHERE m.user_id = v_user_id), 0),
+            lb.points = (lb.total_resources*10 + lb.total_posts*5 + lb.package*2)
+        WHERE lb.user_id = v_user_id;
+      END LOOP;
+      CLOSE cur;
+    END;
+    """)
+
+    for sql in statements:
+      db.execute(text(sql))
+    db.commit()
+
+    return {"installed": True}
+
+
+@router.get("/stats", response_model=dict)
+def get_admin_stats(
+    admin: Admin = Depends(check_admin),
+    db: Session = Depends(get_db)
+):
+    """Get counts for mentors, mentees, posts, resources and pending mentors"""
+    mentors_count = db.query(Mentor).count()
+    mentees_count = db.query(Mentee).count()
+    pending_mentors = db.query(Mentor).filter(Mentor.verified == False).count()
+    resources_count = db.query(Resource).count()
+    posts_count = db.query(Post).count()
+    return {
+        "mentors": mentors_count,
+        "mentees": mentees_count,
+        "pending_mentors": pending_mentors,
+        "resources": resources_count,
+        "posts": posts_count,
     }
 

@@ -4,6 +4,13 @@ from app.db import get_db
 from app.models.user import User
 from app.schemas.user import UserResponse, UserUpdate
 from app.utils.auth import get_current_active_user
+from app.models.post import Post
+from app.models.resource import Resource
+from app.models.leaderboard import Leaderboard
+from app.models.mentor import Mentor
+from app.models.mentee import Mentee
+from app.models.chat import Chat
+from app.models.admin import Admin
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -41,4 +48,27 @@ def update_current_user_profile(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_current_user_account(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    db.query(Chat).filter((Chat.sender_id == current_user.id) | (Chat.receiver_id == current_user.id)).delete(synchronize_session=False)
+    db.query(Post).filter(Post.user_id == current_user.id).delete(synchronize_session=False)
+    db.query(Resource).filter(Resource.user_id == current_user.id).delete(synchronize_session=False)
+    db.query(Leaderboard).filter(Leaderboard.user_id == current_user.id).delete(synchronize_session=False)
+    db.query(Mentor).filter(Mentor.user_id == current_user.id).delete(synchronize_session=False)
+    db.query(Mentee).filter(Mentee.user_id == current_user.id).delete(synchronize_session=False)
+    db.query(Admin).filter(Admin.user_id == current_user.id).delete(synchronize_session=False)
+    db.delete(user)
+    db.commit()
+    return None
 

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.user import User, UserRole
 from app.models.mentee import Mentee
-from app.schemas.mentee import MenteeCreate, MenteeResponse
+from app.schemas.mentee import MenteeCreate, MenteeResponse, MenteeUpdate
 from app.utils.auth import get_current_active_user
 
 router = APIRouter(prefix="/mentees", tags=["mentees"])
@@ -51,5 +51,25 @@ def get_mentee_profile(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Mentee profile not found"
         )
+    return mentee
+
+
+@router.put("/me", response_model=MenteeResponse)
+def update_mentee_profile(
+    mentee_update: MenteeUpdate,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    mentee = db.query(Mentee).filter(Mentee.user_id == current_user.id).first()
+    if not mentee:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mentee profile not found"
+        )
+    update_data = mentee_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(mentee, field, value)
+    db.commit()
+    db.refresh(mentee)
     return mentee
 

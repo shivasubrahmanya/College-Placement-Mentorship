@@ -4,7 +4,7 @@ export interface User {
   id: number
   email: string
   full_name: string
-  role: 'mentor' | 'mentee' | 'admin'
+  role: 'MENTOR' | 'MENTEE' | 'ADMIN'
   created_at: string
 }
 
@@ -22,6 +22,10 @@ export const usersApi = {
   updateMe: async (data: UserUpdate): Promise<User> => {
     const response = await apiClient.put<User>('/users/me', data)
     return response.data
+  },
+  
+  deleteMe: async (): Promise<void> => {
+    await apiClient.delete('/users/me')
   },
 }
 

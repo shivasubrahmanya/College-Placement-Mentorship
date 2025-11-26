@@ -1,27 +1,26 @@
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { mentorsApi } from '../api/mentors'
-import { Link } from 'react-router-dom'
 import { resourcesApi } from '../api/resources'
 
-export default function MentorProfile() {
-  const { id } = useParams<{ id: string }>()
-  const mentorId = parseInt(id || '0')
+export default function MentorByUserProfile() {
+  const { userId } = useParams<{ userId: string }>()
+  const uid = parseInt(userId || '0')
 
   const { data: mentor, isLoading } = useQuery({
-    queryKey: ['mentor', mentorId],
-    queryFn: () => mentorsApi.get(mentorId),
-    enabled: !!mentorId,
+    queryKey: ['mentorByUser', uid],
+    queryFn: () => mentorsApi.getByUser(uid),
+    enabled: !!uid,
   })
 
   const { data: resources } = useQuery({
-    queryKey: ['mentorResources', mentor?.user_id],
-    queryFn: () => resourcesApi.list({ user_id: mentor!.user_id, limit: 50 }),
-    enabled: !!mentor?.user_id,
+    queryKey: ['mentorResources', uid],
+    queryFn: () => resourcesApi.list({ user_id: uid, limit: 50 }),
+    enabled: !!uid,
   })
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading mentor profile...</div>
+    return <div className="text-center py-8">Loading mentor...</div>
   }
 
   if (!mentor) {
@@ -43,68 +42,6 @@ export default function MentorProfile() {
               Verified Mentor
             </span>
           )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Branch</h3>
-            <p className="text-lg text-gray-900">{mentor.branch}</p>
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-gray-500 mb-1">Graduation Year</h3>
-            <p className="text-lg text-gray-900">{mentor.graduation_year}</p>
-          </div>
-          {mentor.current_company && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Current Company</h3>
-              <p className="text-lg text-gray-900">{mentor.current_company}</p>
-            </div>
-          )}
-          {mentor.package > 0 && (
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-1">Package</h3>
-              <p className="text-lg text-gray-900">{mentor.package} LPA</p>
-            </div>
-          )}
-        </div>
-
-        {mentor.bio && (
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Bio</h3>
-            <p className="text-gray-900">{mentor.bio}</p>
-          </div>
-        )}
-
-        <div className="flex gap-4">
-          {mentor.linkedin_url && (
-            <a
-              href={mentor.linkedin_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800"
-            >
-              LinkedIn
-            </a>
-          )}
-          {mentor.github_url && (
-            <a
-              href={mentor.github_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800"
-            >
-              GitHub
-            </a>
-          )}
-        </div>
-
-        <div className="mt-6 pt-6 border-t">
-          <Link
-            to={`/chat/${mentor.user_id}`}
-            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            Send Message
-          </Link>
         </div>
 
         <div className="mt-10">
@@ -147,4 +84,3 @@ export default function MentorProfile() {
     </div>
   )
 }
-

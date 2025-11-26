@@ -1,11 +1,10 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
 from app.db import get_db
 from app.models.user import User, UserRole
 from app.models.mentor import Mentor, Branch
-from app.schemas.mentor import MentorCreate, MentorResponse, MentorUpdate, MentorListResponse
+from app.schemas.mentor import MentorCreate, MentorResponse, MentorListResponse, MentorUpdate
 from app.utils.auth import get_current_active_user
 
 router = APIRouter(prefix="/mentors", tags=["mentors"])
@@ -74,6 +73,34 @@ def create_mentor(
 def get_mentor(mentor_id: int, db: Session = Depends(get_db)):
     """Get mentor by ID"""
     mentor = db.query(Mentor).filter(Mentor.id == mentor_id).first()
+    if not mentor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mentor not found"
+        )
+    return mentor
+
+
+@router.get("/me", response_model=MentorResponse)
+def get_my_mentor_profile(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    mentor = db.query(Mentor).filter(Mentor.user_id == current_user.id).first()
+    if not mentor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mentor profile not found"
+        )
+    return mentor
+
+
+@router.get("/by-user/{user_id}", response_model=MentorResponse)
+def get_mentor_by_user_id(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    mentor = db.query(Mentor).filter(Mentor.user_id == user_id).first()
     if not mentor:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

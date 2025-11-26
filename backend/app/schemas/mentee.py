@@ -14,6 +14,12 @@ class MenteeCreate(BaseModel):
     goals: Optional[str] = None
 
 
+class MenteeUpdate(BaseModel):
+    branch: Optional[str] = None
+    current_year: Optional[int] = None
+    goals: Optional[str] = None
+
+
 class MenteeResponse(BaseModel):
     id: int
     user_id: int

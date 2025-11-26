@@ -70,6 +70,16 @@ export const mentorsApi = {
     return response.data
   },
   
+  getMe: async (): Promise<Mentor> => {
+    const response = await apiClient.get<Mentor>('/mentors/me')
+    return response.data
+  },
+  
+  getByUser: async (userId: number): Promise<Mentor> => {
+    const response = await apiClient.get<Mentor>(`/mentors/by-user/${userId}`)
+    return response.data
+  },
+  
   create: async (data: MentorCreate): Promise<Mentor> => {
     const response = await apiClient.post<Mentor>('/mentors', data)
     return response.data

@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { mentorsApi, MentorCreate, Branch, BranchValues } from '../api/mentors'
 import { menteesApi, MenteeCreate } from '../api/mentees'
+import { adminApi } from '../api/admin'
 
 export default function Onboarding() {
-  const [role, setRole] = useState<'mentor' | 'mentee' | null>(null)
+  const [role, setRole] = useState<'mentor' | 'mentee' | 'admin' | null>(null)
   const [mentorData, setMentorData] = useState<MentorCreate>({
     branch: 'CSE',
     graduation_year: new Date().getFullYear(),
@@ -31,6 +32,19 @@ export default function Onboarding() {
     },
   })
 
+  const [adminData, setAdminData] = useState({
+    department_name: '',
+    designation: '',
+    contact_number: '',
+  })
+
+  const adminMutation = useMutation({
+    mutationFn: adminApi.createProfile,
+    onSuccess: () => {
+      navigate('/admin')
+    },
+  })
+
   const handleMentorSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     mentorMutation.mutate(mentorData)
@@ -41,6 +55,11 @@ export default function Onboarding() {
     menteeMutation.mutate(menteeData)
   }
 
+  const handleAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    adminMutation.mutate(adminData)
+  }
+
   if (!role) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -48,7 +67,7 @@ export default function Onboarding() {
           <h2 className="text-3xl font-extrabold text-center text-gray-900">
             Choose your role
           </h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <button
               onClick={() => setRole('mentor')}
               className="p-6 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition"
@@ -62,6 +81,13 @@ export default function Onboarding() {
             >
               <h3 className="text-xl font-semibold mb-2">Mentee</h3>
               <p className="text-gray-600">Get guidance from mentors</p>
+            </button>
+            <button
+              onClick={() => setRole('admin')}
+              className="p-6 border-2 border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition"
+            >
+              <h3 className="text-xl font-semibold mb-2">Admin</h3>
+              <p className="text-gray-600">Moderate and manage platform</p>
             </button>
           </div>
         </div>
@@ -149,6 +175,56 @@ export default function Onboarding() {
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {mentorMutation.isPending ? 'Creating...' : 'Create Profile'}
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
+
+  if (role === 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <h2 className="text-3xl font-extrabold text-center text-gray-900">
+              Admin Profile Setup
+            </h2>
+          </div>
+          <form onSubmit={handleAdminSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Department Name</label>
+              <input
+                type="text"
+                value={adminData.department_name}
+                onChange={(e) => setAdminData({ ...adminData, department_name: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Designation</label>
+              <input
+                type="text"
+                value={adminData.designation}
+                onChange={(e) => setAdminData({ ...adminData, designation: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Contact Number</label>
+              <input
+                type="text"
+                value={adminData.contact_number}
+                onChange={(e) => setAdminData({ ...adminData, contact_number: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={adminMutation.isPending}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+            >
+              {adminMutation.isPending ? 'Creating...' : 'Create Admin Profile'}
             </button>
           </form>
         </div>

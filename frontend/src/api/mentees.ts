@@ -17,6 +17,12 @@ export interface MenteeCreate {
   goals?: string
 }
 
+export interface MenteeUpdate {
+  branch?: string
+  current_year?: number
+  goals?: string
+}
+
 export const menteesApi = {
   create: async (data: MenteeCreate): Promise<Mentee> => {
     const response = await apiClient.post<Mentee>('/mentees', data)
@@ -25,6 +31,11 @@ export const menteesApi = {
   
   getMe: async (): Promise<Mentee> => {
     const response = await apiClient.get<Mentee>('/mentees/me')
+    return response.data
+  },
+  
+  update: async (data: MenteeUpdate): Promise<Mentee> => {
+    const response = await apiClient.put<Mentee>('/mentees/me', data)
     return response.data
   },
 }

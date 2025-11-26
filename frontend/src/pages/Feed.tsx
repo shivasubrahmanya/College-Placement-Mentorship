@@ -2,9 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { postsApi } from '../api/posts'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { usersApi } from '../api/users'
 
 export default function Feed() {
   const queryClient = useQueryClient()
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: usersApi.getMe,
+  })
 
   const { data: posts, isLoading } = useQuery({
     queryKey: ['posts'],
@@ -30,12 +35,14 @@ export default function Feed() {
     <div className="px-4 py-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Feed</h1>
-        <Link
-          to="/posts/create"
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-        >
-          Create Post
-        </Link>
+        {(currentUser?.role === 'MENTOR' || currentUser?.role === 'ADMIN') && (
+          <Link
+            to="/posts/create"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Create Post
+          </Link>
+        )}
       </div>
 
       <div className="space-y-6">

@@ -1,5 +1,7 @@
 import { Outlet, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useQuery } from '@tanstack/react-query'
+import { usersApi } from '../api/users'
 
 export default function Layout() {
   const { logout } = useAuth()
@@ -9,6 +11,11 @@ export default function Layout() {
     logout()
     navigate('/login')
   }
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: usersApi.getMe,
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,6 +53,20 @@ export default function Layout() {
                 >
                   Leaderboard
                 </Link>
+                <Link
+                  to="/profile"
+                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  Profile
+                </Link>
+                {currentUser?.role === 'ADMIN' && (
+                  <Link
+                    to="/admin"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Admin
+                  </Link>
+                )}
               </div>
             </div>
             <div className="flex items-center">

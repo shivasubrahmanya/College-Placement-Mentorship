@@ -27,6 +27,8 @@ export interface ResourceCreate {
 export const resourcesApi = {
   list: async (params?: {
     category?: string
+    resource_type?: ResourceType
+    user_id?: number
     skip?: number
     limit?: number
   }): Promise<Resource[]> => {
