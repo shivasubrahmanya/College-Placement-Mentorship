@@ -2,6 +2,7 @@
 Background Scheduler for Leaderboard Auto-Recalculation
 """
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.base import SchedulerNotRunningError
 from apscheduler.triggers.cron import CronTrigger
 from app.db import SessionLocal
 from app.models.leaderboard import Leaderboard
@@ -54,6 +55,10 @@ def start_scheduler():
 
 def stop_scheduler():
     """Stop the background scheduler"""
-    scheduler.shutdown()
-    print("Background scheduler stopped")
+    try:
+        scheduler.shutdown()
+        print("Background scheduler stopped")
+    except SchedulerNotRunningError:
+        # Ignore if not running
+        pass
 

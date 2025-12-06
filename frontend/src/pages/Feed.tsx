@@ -28,17 +28,21 @@ export default function Feed() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading posts...</div>
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="animate-pulse text-indigo-400">Loading feed...</div>
+      </div>
+    )
   }
 
   return (
-    <div className="px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Feed</h1>
+    <div className="px-4 py-6 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-white font-heading">Community Feed</h1>
         {(currentUser?.role === 'MENTOR' || currentUser?.role === 'ADMIN') && (
           <Link
             to="/posts/create"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="btn-primary"
           >
             Create Post
           </Link>
@@ -47,26 +51,26 @@ export default function Feed() {
 
       <div className="space-y-6">
         {posts?.map((post) => (
-          <div key={post.id} className="bg-white rounded-lg shadow-sm p-6">
+          <div key={post.id} className="card p-6 animate-fade-in-up">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-1">{post.title}</h3>
-                <p className="text-sm text-gray-500">
-                  by {post.user.full_name} •{' '}
+                <h3 className="text-xl font-bold text-slate-100 mb-1 font-heading">{post.title}</h3>
+                <p className="text-sm text-slate-400">
+                  by <span className="text-indigo-400">{post.user.full_name}</span> •{' '}
                   {new Date(post.created_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
-            <p className="text-gray-700 mb-4 whitespace-pre-wrap">{post.content}</p>
-            <div className="flex items-center gap-4">
+            <p className="text-slate-300 mb-6 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+            <div className="flex items-center gap-4 border-t border-slate-700/50 pt-4">
               <button
                 onClick={() => handleLike(post.id)}
                 disabled={likeMutation.isPending}
-                className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition"
+                className="flex items-center gap-2 text-slate-400 hover:text-red-500 transition-colors group"
               >
                 <svg
-                  className="w-5 h-5"
-                  fill="none"
+                  className="w-5 h-5 transition-transform group-hover:scale-110 group-active:scale-95"
+                  fill={post.likes > 0 ? 'currentColor' : 'none'}
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -77,7 +81,7 @@ export default function Feed() {
                     d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                   />
                 </svg>
-                <span>{post.likes}</span>
+                <span className="font-medium">{post.likes}</span>
               </button>
             </div>
           </div>
@@ -85,9 +89,10 @@ export default function Feed() {
       </div>
 
       {posts && posts.length === 0 && (
-        <div className="text-center py-8 text-gray-500">No posts yet. Be the first to post!</div>
+        <div className="text-center py-20 bg-white/5 rounded-xl border border-white/10">
+          <p className="text-slate-400 text-lg">No posts yet. Be the first to start the conversation!</p>
+        </div>
       )}
     </div>
   )
 }
-

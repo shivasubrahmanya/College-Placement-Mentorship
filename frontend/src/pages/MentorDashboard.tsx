@@ -50,6 +50,7 @@ export default function MentorDashboard() {
     mutationFn: usersApi.updateMe,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+      alert('User details updated successfully')
     },
   })
 
@@ -57,6 +58,7 @@ export default function MentorDashboard() {
     mutationFn: mentorsApi.update,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['mentorMe'] })
+      alert('Mentor profile updated successfully')
     },
   })
 
@@ -79,71 +81,111 @@ export default function MentorDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Mentor Profile</h1>
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-4">User Information</h2>
-        <form onSubmit={handleUserSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md w-full" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-md w-full" />
-          </div>
-          <button type="submit" disabled={updateUser.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-md">Save Changes</button>
-        </form>
+    <div className="max-w-4xl mx-auto px-4 pb-12 animate-fade-in-up">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-white font-heading">My Profile</h1>
+        <div className="px-3 py-1 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full text-sm font-medium">
+          Mentor Account
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-4">Mentor Details</h2>
-        <form onSubmit={handleMentorSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-            <select value={mentorForm.branch || ''} onChange={(e) => setMentorForm({ ...mentorForm, branch: e.target.value as any })} className="px-3 py-2 border border-gray-300 rounded-md w-full">
-              {BranchValues.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Graduation Year</label>
-            <input type="number" value={mentorForm.graduation_year || 0} onChange={(e) => setMentorForm({ ...mentorForm, graduation_year: Number(e.target.value) })} className="px-3 py-2 border border-gray-300 rounded-md w-full" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Current Company</label>
-            <input value={mentorForm.current_company || ''} onChange={(e) => setMentorForm({ ...mentorForm, current_company: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-md w-full" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Package (LPA)</label>
-            <input type="number" value={mentorForm.package || 0} onChange={(e) => setMentorForm({ ...mentorForm, package: Number(e.target.value) })} className="px-3 py-2 border border-gray-300 rounded-md w-full" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-            <textarea value={mentorForm.bio || ''} onChange={(e) => setMentorForm({ ...mentorForm, bio: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-md w-full" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
-              <input value={mentorForm.linkedin_url || ''} onChange={(e) => setMentorForm({ ...mentorForm, linkedin_url: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-md w-full" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">GitHub URL</label>
-              <input value={mentorForm.github_url || ''} onChange={(e) => setMentorForm({ ...mentorForm, github_url: e.target.value })} className="px-3 py-2 border border-gray-300 rounded-md w-full" />
-            </div>
-          </div>
-          <button type="submit" disabled={updateMentor.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-md">Save Mentor Details</button>
-        </form>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-4">Delete Account</h2>
-        <button onClick={() => {
-          if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-            deleteAccount.mutate()
-          }
-        }} disabled={deleteAccount.isPending} className="px-4 py-2 bg-red-600 text-white rounded-md">Delete My Account</button>
+        {/* Left Column: Core User Info */}
+        <div className="space-y-8">
+          <div className="card p-6">
+            <h2 className="text-xl font-bold text-white mb-6 font-heading border-b border-white/5 pb-4">Account Settings</h2>
+            <form onSubmit={handleUserSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Full Name</label>
+                <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-field" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Email</label>
+                <input value={email} onChange={(e) => setEmail(e.target.value)} className="input-field" />
+              </div>
+              <button type="submit" disabled={updateUser.isPending} className="w-full btn-primary">
+                {updateUser.isPending ? 'Saving...' : 'Save Changes'}
+              </button>
+            </form>
+          </div>
+
+          <div className="card p-6 border-red-500/10 bg-red-500/5">
+            <h2 className="text-lg font-bold text-red-400 mb-4">Danger Zone</h2>
+            <p className="text-slate-400 text-sm mb-4">Once you delete your account, there is no going back. Please be certain.</p>
+            <button
+              onClick={() => {
+                if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                  deleteAccount.mutate()
+                }
+              }}
+              disabled={deleteAccount.isPending}
+              className="w-full px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+            >
+              Delete My Account
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column: Mentor Details */}
+        <div className="lg:col-span-2">
+          <div className="card p-8">
+            <h2 className="text-xl font-bold text-white mb-6 font-heading border-b border-white/5 pb-4">Professional Profile</h2>
+            <form onSubmit={handleMentorSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Branch</label>
+                  <select
+                    value={mentorForm.branch || ''}
+                    onChange={(e) => setMentorForm({ ...mentorForm, branch: e.target.value as any })}
+                    className="input-field"
+                  >
+                    {BranchValues.map((b) => (
+                      <option key={b} value={b} className="bg-slate-800">{b}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Graduation Year</label>
+                  <input type="number" value={mentorForm.graduation_year || 0} onChange={(e) => setMentorForm({ ...mentorForm, graduation_year: Number(e.target.value) })} className="input-field" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Current Company</label>
+                  <input value={mentorForm.current_company || ''} onChange={(e) => setMentorForm({ ...mentorForm, current_company: e.target.value })} className="input-field" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">Package (LPA)</label>
+                  <input type="number" value={mentorForm.package || 0} onChange={(e) => setMentorForm({ ...mentorForm, package: Number(e.target.value) })} className="input-field" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-2">Bio</label>
+                <textarea rows={4} value={mentorForm.bio || ''} onChange={(e) => setMentorForm({ ...mentorForm, bio: e.target.value })} className="input-field" placeholder="Tell us about yourself..." />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">LinkedIn URL</label>
+                  <input value={mentorForm.linkedin_url || ''} onChange={(e) => setMentorForm({ ...mentorForm, linkedin_url: e.target.value })} className="input-field" placeholder="https://linkedin.com/in/..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-2">GitHub URL</label>
+                  <input value={mentorForm.github_url || ''} onChange={(e) => setMentorForm({ ...mentorForm, github_url: e.target.value })} className="input-field" placeholder="https://github.com/..." />
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <button type="submit" disabled={updateMentor.isPending} className="btn-primary px-8">
+                  {updateMentor.isPending ? 'Updating...' : 'Update Profile'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -17,6 +17,7 @@ import MentorByUserProfile from './pages/MentorByUserProfile'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminModeration from './pages/AdminModeration'
 import AdminProfile from './pages/AdminProfile'
+import AllResources from './pages/AllResources'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -52,6 +53,7 @@ function App() {
           <Route path="mentors/user/:userId" element={<MentorByUserProfile />} />
           <Route path="posts/create" element={<CreatePost />} />
           <Route path="resources" element={<ResourcesList />} />
+          <Route path="resources/all" element={<AllResources />} />
           <Route path="chat/:userId" element={<Chat />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="profile" element={<Profile />} />

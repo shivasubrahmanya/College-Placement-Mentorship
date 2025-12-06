@@ -16,32 +16,33 @@ export default function MentorsList() {
         graduation_year: graduationYear ? parseInt(graduationYear) : undefined,
         verified: verified !== '' ? verified : undefined,
       }),
+    refetchInterval: 2000,
   })
 
   return (
     <div className="px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Mentors</h1>
-        
-        <div className="bg-white p-4 rounded-lg shadow-sm space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-6 font-heading">Find a Mentor</h1>
+
+        <div className="card p-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Branch</label>
               <select
                 value={branch}
                 onChange={(e) => setBranch(e.target.value as Branch | '')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="input-field"
               >
-                <option value="">All Branches</option>
+                <option value="" className="bg-slate-800">All Branches</option>
                 {BranchValues.map((b) => (
-                  <option key={b} value={b}>
+                  <option key={b} value={b} className="bg-slate-800">
                     {b}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-slate-300 mb-2">
                 Graduation Year
               </label>
               <input
@@ -49,21 +50,21 @@ export default function MentorsList() {
                 value={graduationYear}
                 onChange={(e) => setGraduationYear(e.target.value)}
                 placeholder="e.g., 2020"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="input-field"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Verified</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Verified</label>
               <select
                 value={verified === '' ? '' : verified.toString()}
                 onChange={(e) =>
                   setVerified(e.target.value === '' ? '' : e.target.value === 'true')
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="input-field"
               >
-                <option value="">All</option>
-                <option value="true">Verified</option>
-                <option value="false">Not Verified</option>
+                <option value="" className="bg-slate-800">All</option>
+                <option value="true" className="bg-slate-800">Verified</option>
+                <option value="false" className="bg-slate-800">Not Verified</option>
               </select>
             </div>
           </div>
@@ -71,34 +72,54 @@ export default function MentorsList() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8">Loading mentors...</div>
+        <div className="flex justify-center items-center py-20">
+          <div className="animate-pulse text-indigo-400">Loading mentors...</div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {mentors?.map((mentor) => (
             <Link
               key={mentor.id}
               to={`/mentors/${mentor.id}`}
-              className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition"
+              className="card p-6 hover:scale-[1.02] hover:border-indigo-500/50 group block animate-fade-in-up"
             >
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="text-xl font-semibold text-gray-900">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-xl font-bold text-slate-100 group-hover:text-primary transition-colors font-heading">
                   {mentor.user.full_name}
                 </h3>
                 {mentor.verified && (
-                  <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                  <span className="px-2 py-1 text-xs font-semibold bg-green-500/20 text-green-400 rounded-full border border-green-500/20">
                     Verified
                   </span>
                 )}
               </div>
-              <p className="text-gray-600 mb-2">{mentor.user.email}</p>
-              <div className="space-y-1 text-sm text-gray-500">
-                <p>Branch: {mentor.branch}</p>
-                <p>Graduation Year: {mentor.graduation_year}</p>
-                {mentor.current_company && <p>Company: {mentor.current_company}</p>}
-                {mentor.package > 0 && <p>Package: {mentor.package} LPA</p>}
+              <p className="text-slate-400 mb-4 text-sm font-medium">{mentor.user.email}</p>
+              <div className="space-y-2 text-sm text-slate-300">
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-slate-500">Branch</span>
+                  <span>{mentor.branch}</span>
+                </div>
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-slate-500">Graduation</span>
+                  <span>{mentor.graduation_year}</span>
+                </div>
+                {mentor.current_company && (
+                  <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                    <span className="text-slate-500">Company</span>
+                    <span className="font-semibold text-indigo-400">{mentor.current_company}</span>
+                  </div>
+                )}
+                {mentor.package > 0 && (
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-slate-500">Package</span>
+                    <span>{mentor.package} LPA</span>
+                  </div>
+                )}
               </div>
               {mentor.bio && (
-                <p className="mt-3 text-sm text-gray-600 line-clamp-2">{mentor.bio}</p>
+                <p className="mt-4 text-sm text-slate-400 line-clamp-2 italic border-t border-white/10 pt-4">
+                  "{mentor.bio}"
+                </p>
               )}
             </Link>
           ))}
@@ -106,9 +127,10 @@ export default function MentorsList() {
       )}
 
       {mentors && mentors.length === 0 && (
-        <div className="text-center py-8 text-gray-500">No mentors found</div>
+        <div className="text-center py-20 bg-white/5 rounded-xl border border-white/10">
+          <p className="text-slate-400 text-lg">No mentors found matching your criteria</p>
+        </div>
       )}
     </div>
   )
 }
-

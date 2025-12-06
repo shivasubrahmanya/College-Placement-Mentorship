@@ -1,17 +1,29 @@
 import { useQuery } from '@tanstack/react-query'
 import { adminApi } from '../api/admin'
 import { mentorsApi } from '../api/mentors'
+import { apiClient } from '../api/client'
 import { Link } from 'react-router-dom'
 
 export default function AdminDashboard() {
   const { data: stats } = useQuery({
     queryKey: ['adminStats'],
     queryFn: adminApi.getStats,
+    refetchInterval: 2000,
   })
 
   const { data: pendingMentors } = useQuery({
     queryKey: ['pendingMentors'],
     queryFn: () => mentorsApi.list({ verified: false, limit: 20 }),
+    refetchInterval: 2000,
+  })
+
+  const { data: unreadCounts } = useQuery({
+    queryKey: ['adminUnreadCounts'],
+    queryFn: async () => {
+      const res = await apiClient.get('/chats/unread/count')
+      return res.data as Record<string, number>
+    },
+    refetchInterval: 5000,
   })
 
   return (
@@ -22,6 +34,14 @@ export default function AdminDashboard() {
           <div className="flex gap-2">
             <Link to="/admin/moderation" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Moderation</Link>
             <Link to="/admin/profile" className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">Profile</Link>
+            <Link to="/admin/moderation?tab=mentors" className="relative px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+              Notifications
+              {unreadCounts && Object.values(unreadCounts).reduce((a, b) => a + b, 0) > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
+                  {Object.values(unreadCounts).reduce((a, b) => a + b, 0)}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
 

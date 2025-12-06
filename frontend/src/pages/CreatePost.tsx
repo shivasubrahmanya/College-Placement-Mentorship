@@ -22,11 +22,11 @@ export default function CreatePost() {
 
   return (
     <div className="px-4 py-6 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">Create Post</h1>
-      
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-4">
+      <h1 className="text-3xl font-bold text-white mb-8 font-heading">Create Post</h1>
+
+      <form onSubmit={handleSubmit} className="card p-8 space-y-6 animate-fade-in-up">
         <div>
-          <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-2">
             Title
           </label>
           <input
@@ -35,12 +35,12 @@ export default function CreatePost() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Post title"
+            className="input-field"
+            placeholder="What's on your mind?"
           />
         </div>
         <div>
-          <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="content" className="block text-sm font-medium text-slate-300 mb-2">
             Content
           </label>
           <textarea
@@ -49,27 +49,29 @@ export default function CreatePost() {
             onChange={(e) => setContent(e.target.value)}
             required
             rows={10}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Write your post content here..."
+            className="input-field min-h-[200px]"
+            placeholder="Share your thoughts with the community..."
           />
         </div>
+
         {mutation.isError && (
-          <div className="text-red-600 text-sm">
+          <div className="text-red-400 text-sm p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
             Failed to create post. Please try again.
           </div>
         )}
-        <div className="flex gap-4">
+
+        <div className="flex gap-4 pt-4">
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary"
           >
-            {mutation.isPending ? 'Creating...' : 'Create Post'}
+            {mutation.isPending ? 'Publishing...' : 'Publish Post'}
           </button>
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+            className="btn-secondary"
           >
             Cancel
           </button>
@@ -78,4 +80,3 @@ export default function CreatePost() {
     </div>
   )
 }
-

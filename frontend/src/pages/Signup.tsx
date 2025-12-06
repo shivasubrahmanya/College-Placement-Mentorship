@@ -1,6 +1,6 @@
 /**
  * Signup Page
- * Simple, clean signup form with error handling
+ * Modern, glassmorphism signup form
  */
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
@@ -25,33 +25,26 @@ export default function Signup() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('📝 Signup form submitted:', { email, full_name: fullName, password: '***' })
-    console.log('📝 Calling mutation.mutate with:', { email, password: '***', full_name: fullName })
-    
     if (!email || !password || !fullName) {
-      console.error('❌ Form validation failed: Missing fields')
       alert('Please fill in all fields')
       return
     }
-    
-    console.log('📝 Triggering mutation...')
     mutation.mutate({ email, password, full_name: fullName })
-    console.log('📝 Mutation triggered, isPending:', mutation.isPending)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 card p-10 animate-fade-in-up">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
+          <h2 className="text-center text-3xl font-bold text-white mb-2">
+            Create Account
           </h2>
-          <div className="mt-2 text-center text-sm text-gray-500">
-            API Endpoint: POST /auth/signup
-          </div>
+          <p className="text-center text-slate-400 text-sm">
+            Join the community and start your journey
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
+          <div className="space-y-4">
             <div>
               <label htmlFor="fullName" className="sr-only">
                 Full Name
@@ -61,7 +54,7 @@ export default function Signup() {
                 name="fullName"
                 type="text"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="input-field"
                 placeholder="Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -77,7 +70,7 @@ export default function Signup() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="input-field"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -93,7 +86,7 @@ export default function Signup() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="input-field"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -102,39 +95,25 @@ export default function Signup() {
           </div>
 
           {mutation.isError && (
-            <div className="text-red-600 text-sm text-center p-3 bg-red-50 rounded-md">
+            <div className="text-red-400 text-sm text-center p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
               <div className="font-semibold mb-1">Signup Failed</div>
               <div>
                 {mutation.error && 'response' in mutation.error
                   ? (() => {
-                      const error = mutation.error as any
-                      // Handle validation errors (422)
-                      if (error.response?.status === 422) {
-                        const detail = error.response?.data?.detail
-                        if (Array.isArray(detail)) {
-                          return detail.map((err: any) => `${err.loc?.join('.')}: ${err.msg}`).join(', ')
-                        }
-                        return detail || 'Validation error: Please check your input'
+                    const error = mutation.error as any
+                    if (error.response?.status === 422) {
+                      const detail = error.response?.data?.detail
+                      if (Array.isArray(detail)) {
+                        return detail.map((err: any) => `${err.loc?.join('.')}: ${err.msg}`).join(', ')
                       }
-                      // Handle other errors
-                      return error.response?.data?.detail || 
-                        error.response?.data?.message ||
-                        error.message ||
-                        'Network error: Could not connect to server. Make sure the backend is running on http://127.0.0.1:8000'
-                    })()
-                  : mutation.error instanceof Error
-                  ? mutation.error.message
-                  : 'An error occurred. Please check if the backend server is running.'}
+                      return detail || 'Validation error'
+                    }
+                    return error.response?.data?.detail ||
+                      error.message ||
+                      'Network error'
+                  })()
+                  : 'An error occurred'}
               </div>
-              <div className="text-xs mt-2 text-gray-500">
-                Check browser console (F12) for more details
-              </div>
-            </div>
-          )}
-          
-          {mutation.isSuccess && (
-            <div className="text-green-600 text-sm text-center p-3 bg-green-50 rounded-md">
-              ✅ Account created successfully! Redirecting...
             </div>
           )}
 
@@ -142,14 +121,14 @@ export default function Signup() {
             <button
               type="submit"
               disabled={mutation.isPending}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {mutation.isPending ? 'Creating account...' : 'Sign up'}
             </button>
           </div>
 
           <div className="text-center">
-            <Link to="/login" className="text-blue-600 hover:text-blue-500 text-sm">
+            <Link to="/login" className="text-primary hover:text-primary-hover text-sm font-medium transition-colors">
               Already have an account? Sign in
             </Link>
           </div>

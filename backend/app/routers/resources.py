@@ -1,11 +1,13 @@
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import func, or_, text
+from app.schemas.resource import ResourceMentorSummary
 from app.db import get_db
 from app.models.user import User, UserRole
 from app.models.resource import Resource
 from app.schemas.resource import ResourceCreate, ResourceResponse, ResourceListResponse
-from app.utils.auth import get_current_active_user
+from app.utils.auth import get_current_active_user, get_current_user_optional
 
 router = APIRouter(prefix="/resources", tags=["resources"])
 
@@ -17,28 +19,82 @@ def list_resources(
     user_id: Optional[int] = Query(None, description="Filter by user (mentor) id"),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user_opt: Optional[User] = Depends(get_current_user_optional)
 ):
     """List resources with optional filters and pagination. Only shows approved content."""
     from app.models.resource import ResourceType
     
-    query = db.query(Resource).filter(Resource.is_approved == True)  # Only approved resources
+    try:
+        db.execute(text("""
+            UPDATE resources SET resource_type='OTHER' WHERE resource_type IN ('Other','other');
+        """))
+        db.execute(text("""
+            UPDATE resources SET resource_type='STUDY_MATERIAL' WHERE resource_type IN ('Study Material','study material');
+        """))
+        db.execute(text("""
+            UPDATE resources SET resource_type='PREPARATION_GUIDE' WHERE resource_type IN ('Preparation Guide','preparation guide');
+        """))
+        db.execute(text("""
+            UPDATE resources SET resource_type='EXPERIENCE' WHERE resource_type IN ('Experience','experience');
+        """))
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    query = db.query(Resource).options(selectinload(Resource.user))
+    if current_user_opt:
+        query = query.filter(or_(Resource.is_approved == True, Resource.user_id == current_user_opt.id))
+    else:
+        query = query.filter(Resource.is_approved == True)
     
     if category:
         query = query.filter(Resource.category == category)
     
     if resource_type:
-        try:
-            resource_type_enum = ResourceType(resource_type)
+        # Accept both enum values and token names
+        key = resource_type.strip().upper().replace(" ", "_")
+        mapping = {
+            "STUDY_MATERIAL": ResourceType.STUDY_MATERIAL,
+            "PREPARATION_GUIDE": ResourceType.PREPARATION_GUIDE,
+            "EXPERIENCE": ResourceType.EXPERIENCE,
+            "OTHER": ResourceType.OTHER,
+        }
+        resource_type_enum = mapping.get(key)
+        if resource_type_enum is None:
+            try:
+                resource_type_enum = ResourceType(resource_type)
+            except ValueError:
+                resource_type_enum = None
+        if resource_type_enum:
             query = query.filter(Resource.resource_type == resource_type_enum)
-        except ValueError:
-            pass  # Invalid resource type, ignore filter
     
     if user_id:
         query = query.filter(Resource.user_id == user_id)
     
     resources = query.order_by(Resource.created_at.desc()).offset(skip).limit(limit).all()
     return resources
+
+
+@router.get("/mentors", response_model=list[ResourceMentorSummary])
+def list_resource_contributors(
+    db: Session = Depends(get_db)
+):
+    """List mentors/users who have shared approved resources with counts"""
+    from app.models.user import User
+    rows = (
+        db.query(
+            User.id.label("user_id"),
+            User.full_name.label("full_name"),
+            func.count(Resource.id).label("resource_count"),
+        )
+        .join(Resource, Resource.user_id == User.id)
+        .filter(Resource.is_approved == True)
+        .group_by(User.id, User.full_name)
+        .order_by(func.count(Resource.id).desc())
+        .all()
+    )
+    return [ResourceMentorSummary(user_id=r.user_id, full_name=r.full_name, resource_count=r.resource_count) for r in rows]
 
 
 @router.post("", response_model=ResourceResponse, status_code=status.HTTP_201_CREATED)
@@ -66,13 +122,21 @@ def create_resource(
         rt_enum = mapping.get(key, ResourceType.OTHER)
     else:
         rt_enum = rt
+    # Sanitize and trim to column sizes to avoid DB errors
+    title = (resource_data.title or "").strip()[:255]
+    description = (resource_data.description or "").strip() or None
+    file_url = (resource_data.file_url or "").strip()[:500]
+    category = (resource_data.category or None)
+    if category:
+        category = category.strip()[:100] or None
+
     new_resource = Resource(
         user_id=current_user.id,
-        title=resource_data.title,
-        description=resource_data.description,
-        file_url=resource_data.file_url,
+        title=title,
+        description=description,
+        file_url=file_url,
         resource_type=rt_enum,
-        category=resource_data.category,
+        category=category,
         is_approved=True,
     )
     db.add(new_resource)
